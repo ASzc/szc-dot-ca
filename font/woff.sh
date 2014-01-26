@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright 2013 Alex Szczuczko
+# Copyright 2014 Alex Szczuczko
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
