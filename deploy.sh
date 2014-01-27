@@ -23,21 +23,17 @@ set -u
 deploy_dir="live"
 
 # Copy in files
-mkdir "$deploy_dir"
+mkdir -p "$deploy_dir"
+cp -t "$deploy_dir/" index.html robots.txt 404.html 50x.html
 
-cp index.html "$deploy_dir/"
-cp robots.txt "$deploy_dir/"
-cp 404.html "$deploy_dir/"
-cp 50x.html "$deploy_dir/"
-
-mkdir "$deploy_dir/css"
-cp css/sitewide.css "$deploy_dir/css/"
-
-# gzip -9 files accepted by nginx's gzip_static config
-find "$deploy_dir" -type f | xargs gzip -k -9
+mkdir -p "$deploy_dir/css"
+cp -t "$deploy_dir/css/" css/sitewide.css
 
 # Font .woff generation
 font/woff.sh font/*.zip
+
+# gzip -9 files accepted by nginx's gzip_static config
+find "$deploy_dir" -type f -name '*.html' -or -name '*.css' -or -name '*.txt' | xargs gzip -kf9
 
 # rsync files to webroot
 rsync -ruv -e "ssh -p220 -i $HOME/.ssh/skirnir-httpsync" live/* httpsync@skirnir.szc.ca:html/
