@@ -31,19 +31,17 @@ which sfnt2woff 1>/dev/null 2>/dev/null || die "sfnt2woff is required, but not p
 while [ "$#"  -gt 0 ]
 do
     zip="$1"
-    [[ "$zip" =~ .+\.zip ]] || die "Arguments must be zip files. Argument '$zip' did not match"
     [ -e "$zip" ] || die "Arguments must be zip files. Argument '$zip' does not exist"
     [ -f "$zip" ] || die "Arguments must be zip files. Argument '$zip' is not a file"
     zip_basename="$(basename "$zip")"
+    zip_extension="${zip_basename##*.}"
+    [ "$zip_extension" = "zip" ] || die "Arguments must be zip files. Argument '$zip' did not match"
     zip_filename="${zip_basename%.*}"
 
     extract_dir="/tmp/woff-$zip_filename"
     unzip -d "$extract_dir" "$zip"
 
-    find "$extract_dir" -iname '*.ttf' | while read -r sfnt
-    do
-        sfnt2woff "$sfnt"
-    done
+    find "$extract_dir" -type f -iname '*.ttf' -print0 | xargs -0 -n1 sfnt2woff
 
     if [ -d "../live" ]
     then
@@ -56,7 +54,7 @@ do
     fi
     mkdir -p "$output_dir"
 
-    find "$extract_dir" -iname '*.woff' | while read -r woff
+    find "$extract_dir" -name '*.woff' -print0 | while read -d $'\0' -r woff
     do
         woff_basename="$(basename "$woff")"
         mv "$woff" "$output_dir/$woff_basename"

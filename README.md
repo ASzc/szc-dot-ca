@@ -4,6 +4,14 @@
 
 These are the source files for my personal website at https://szc.ca
 
+## Requirements
+
+The scripts are written for Bash and depend on the usual GNU coreutils, findutils, etc. Additionally:
+
+*   deploy.sh uses rsync and pandoc
+*   woff.sh uses sfnt2woff
+*   devserver.sh calls Python 3's http.server
+
 ## License
 
 The scripts and other executable files are copyright and licensed per-file, as specified in each file.
