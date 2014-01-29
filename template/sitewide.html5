@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>%TITLE%</title>
+<link rel="stylesheet" href="/css/sitewide.css" type="text/css" />
+</head>
+<body>
+<article>
+    <h1>%TITLE%</h1>
+    <address>
+        <ul>
+            <li>$author$</li>
+        </ul>
+    </address>
+    <time datetime="%DATETIME%">%DATEHR%</time>
+%BODY%
+<article>
+</body>
+</html>
