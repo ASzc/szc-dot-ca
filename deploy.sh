@@ -68,11 +68,11 @@ find "$css_dir" -type f -name '*.css' -print0 | xargs -0 cp -t "$deploy_dir/css/
 # Process pandoc-supported articles to html
 find "$deploy_dir" -type f -name '*.md' -print0 | while read -d $'\0' -r source_file
 do
-    true
-    #pandoc TODO
+    pandoc -sS -r markdown -w html5 -o "${source_file%%.md}.html" "$source_file"
+    # TODO use custom pandoc template
 
     # Rename source to .txt so the right mime type gets applied
-    # TODO
+    mv "$source_file" "${source_file%%.md}.txt"
 done
 
 # Font .woff generation
