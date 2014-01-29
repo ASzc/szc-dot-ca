@@ -82,11 +82,18 @@ find "$font_dir" -type f -name '*.zip' -print0 | xargs -0 font/woff.sh
 find "$deploy_dir" -type f -regextype 'posix-extended' -regex '.*\.(html|css|txt)' -print0 | xargs -0 gzip -kf9
 
 #
-# Sync with server
+# Perform post-build action
 #
 
 # rsync files to webroot
-if [ $# -gt 0 ] && [ "$1" = "-s" ]
+if [ $# -gt 0 ]
 then
-    rsync -ruv -e "ssh -p220 -i $HOME/.ssh/skirnir-httpsync" "live/." httpsync@skirnir.szc.ca:html/
+    if [ "$1" = "-d" ]
+    then
+        ./devserver.sh
+    elif [ "$1" = "-s" ]
+    then
+        rsync -ruv -e "ssh -p220 -i $HOME/.ssh/skirnir-httpsync" "live/." httpsync@skirnir.szc.ca:html/
+    fi
 fi
+
