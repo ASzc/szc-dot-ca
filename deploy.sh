@@ -50,10 +50,10 @@ font_dir="./font"
 [ -e "$font_dir" ] || die "$font_dir does not exist"
 [ -d "$font_dir" ] || die "$font_dir is not a directory"
 
-# template_dir must exist
-template_dir="./template"
-[ -e "$template_dir" ] || die "$template_dir does not exist"
-[ -d "$template_dir" ] || die "$template_dir is not a directory"
+# writer_dir must exist
+writer_dir="./writer"
+[ -e "$writer_dir" ] || die "$writer_dir does not exist"
+[ -d "$writer_dir" ] || die "$writer_dir is not a directory"
 
 # deploy_dir may exist
 deploy_dir="./live"
@@ -76,28 +76,9 @@ do
     # Perform templating outside of pandoc, since pandoc doesn't seem to like local template paths
     # Also, can do some useful things this way, like standardising date formats, prettifying the body html, etc.
 
-    body_file="/tmp/pandoc-body"
-    pandoc -S -r markdown -w html5 "$source_file" -o "$body_file"
-
-    # TODO custom writer ^
-
-    # TODO processing on $body_file
-
-    # TODO read source file header for title, authors, date, etc.
-    date="now"
-
-    # Process date to standard forms
-    # "Human readable"
-    date_hr="$(date --iso-8601=minutes -d "$date")"
-    # HTML datetime spec.
-    date_datetime="$(date --rfc-3339=seconds -d "$date")"
-
     output_file="${source_file%%.md}.html"
-    nl=$'\n'
-    sed -e "/%BODY%/{$nl r $body_file$nl d }" \
-        -e "s/%DATETIME%/$date_datetime/" \
-        -e "s/%DATEHR%/$date_hr/" \
-        "$template_dir/sitewide.html5" > "$output_file"
+
+    pandoc -S -r markdown -t "$writer_dir/html5.lua" "$source_file" -o "$output_file"
 
     # Rename source to .txt so the right mime type gets applied
     mv "$source_file" "${source_file%%.md}.txt"
