@@ -371,6 +371,14 @@ function Div(s, attr)
     return "<div" .. attributes(attr) .. ">\n" .. s .. "</div>"
 end
 
+function RawInline(syntax, raw)
+    return ""
+end
+
+function RawBlock(syntax, raw)
+    return raw
+end
+
 -- The following code will produce runtime warnings when you haven't defined
 -- all of the functions you need for the custom writer, so it's useful
 -- to include when you're working on a writer.
