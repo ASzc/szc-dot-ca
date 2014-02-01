@@ -246,10 +246,10 @@ end
 
 function Note(s)
     local num = #notes + 1
-    -- insert the back reference right before the final closing tag.
-    s = string.gsub(s, '(.*)</', '%1 <a href="#fnref' .. num ..  '">[' .. num .. ']</a></')
+    -- Remove tags
+    s = string.gsub(s, '</?[a-z]*>', '')
     -- add a list item with the note to the note table.
-    table.insert(notes, '<p id="fn' .. num .. '">' .. s .. '</p>')
+    table.insert(notes, '<p id="fn' .. num .. '">' .. s .. ' <a href="#fnref' .. num ..  '">[' .. num .. ']</a></p>')
     -- return the footnote reference, linked to the note.
     return '<sup><a id="fnref' .. num .. '" href="#fn' .. num .. '">' .. num .. '</a></sup>'
 end
