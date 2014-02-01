@@ -125,6 +125,18 @@ local function pipe(cmd, inp)
     return result
 end
 
+-- Run cmd with arguments
+local function exec(cmd, args)
+    local args_concat = table.concat(args, " ")
+    local file = io.popen(cmd .. " " ..  args_concat, "r")
+    local result = {}
+    for line in file:lines() do
+        table.insert(result, line)
+    end
+    file:close()
+    return result
+end
+
 -- Table to store footnotes, so they can be included at the end.
 local notes = {}
 
@@ -166,7 +178,11 @@ function Doc(body, metadata, variables)
         add('</address>', 1)
     end
     if metadata['date'] and metadata['date'] ~= "" then
-        add('<time datetime="">' .. metadata.date .. '</time>', 1) --TODO
+        -- Get ISO 8601 format
+        local iso8601 = exec("date", {"--iso-8601=minutes", "-d '" .. metadata.date .. "'"})
+        -- Get RFC 3339 format (html's datetime preference?)
+        local rfc3339 = exec("date", {"--rfc-3339=seconds", "-d '" .. metadata.date .. "'"})
+        add('<time datetime="' .. rfc3339[1] .. '">' .. iso8601[1] .. '</time>', 1)
     end
     -- Process the body to do indentation and section tags
     html5section(body, add)
