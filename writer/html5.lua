@@ -358,16 +358,16 @@ end
 -- strings, rows is an array of arrays of strings.
 function Table(caption, aligns, widths, headers, rows)
     local buffer = {}
-    local function add(s)
-        table.insert(buffer, s)
+    local function add(s, level)
+        table.insert(buffer, string.rep('    ', (level or 0)) .. s)
     end
     add("<table>")
     if caption ~= "" then
-        add("<caption>" .. caption .. "</caption>")
+        add("<caption>" .. caption .. "</caption>", 1)
     end
     if widths and widths[1] ~= 0 then
         for _, w in pairs(widths) do
-            add('<col width="' .. string.format("%d%%", w * 100) .. '" />')
+            add('<col width="' .. string.format("%d%%", w * 100) .. '" />', 1)
         end
     end
     local header_row = {}
@@ -380,22 +380,22 @@ function Table(caption, aligns, widths, headers, rows)
     if empty_header then
         head = ""
     else
-        add('<tr class="header">')
+        add('<tr class="header">', 1)
         for _,h in pairs(header_row) do
-            add(h)
+            add(h, 2)
         end
-        add('</tr>')
+        add('</tr>', 1)
     end
     local class = "even"
     for _, row in pairs(rows) do
         class = (class == "even" and "odd") or "even"
-        add('<tr class="' .. class .. '">')
+        add('<tr class="' .. class .. '">', 1)
         for i,c in pairs(row) do
-            add('<td align="' .. html_align(aligns[i]) .. '">' .. c .. '</td>')
+            add('<td align="' .. html_align(aligns[i]) .. '">' .. c .. '</td>', 2)
         end
-        add('</tr>')
+        add('</tr>', 1)
     end
-    add('</table')
+    add('</table>')
     return table.concat(buffer,'\n')
 end
 
