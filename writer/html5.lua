@@ -315,10 +315,9 @@ end
 -- Revisit association list STackValue instance.
 function DefinitionList(items)
     local buffer = {}
-    -- TODO indent
     for _,item in pairs(items) do
         for k, v in pairs(item) do
-            table.insert(buffer,"<dt>" .. k .. "</dt>\n<dd>" .. table.concat(v,"</dd>\n<dd>") .. "</dd>")
+            table.insert(buffer,"    <dt>" .. k .. "</dt>\n    <dd>" .. table.concat(v,"</dd>\n    <dd>") .. "</dd>")
         end
     end
     return "<dl>\n" .. table.concat(buffer, "\n") .. "\n</dl>"
