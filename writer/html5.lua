@@ -28,33 +28,49 @@ local function html5section(body, add)
     local function process(level)
         -- Grab the first line
         local line = (table.remove(lineBuffer) or lines())
+        -- For disabling indentation
+        local noIndent = false
         -- Iterate until there are no more lines
         while line do
-            -- Check for a header tag on this line
-            local headerlevel = tonumber(string.match(line, "<h([1-6])"))
-            if headerlevel then
-                if headerlevel <= level then
-                    -- Pass the line up to parent (base case)
-                    table.insert(lineBuffer, line)
-                    return
-                else
-                    if headerlevel > level + 1 then
-                        -- Header order enforced: Must move up header levels one at a time
-                        -- (h1->h2 ok), but can move down at any rate (h6->h1 ok)
-                        error("HTML 5 sectioning error: headers should only increase one level at a time")
+            -- Handle blank lines
+            if string.match(line, "^ *$") then
+                add(line)
+            else
+                -- Check for a header tag on this line
+                local headerlevel = tonumber(string.match(line, "<h([1-6])"))
+                if headerlevel then
+                    if headerlevel <= level then
+                        -- Pass the line up to parent (base case)
+                        table.insert(lineBuffer, line)
+                        return
+                    else
+                        if headerlevel > level + 1 then
+                            -- Header order enforced: Must move up header levels one at a time
+                            -- (h1->h2 ok), but can move down at any rate (h6->h1 ok)
+                            error("HTML 5 sectioning error: headers should only increase one level at a time")
+                        end
+
+                        add('<section>', level)
+                        add(line, headerlevel)
+                        process(headerlevel)
+                        add('</section>', level)
+                    end
+                else -- no header tag
+                    if noIndent then
+                        add(line)
+                    else
+                        add(line, level)
                     end
 
-                    add('<section>', level)
-                    add(line, headerlevel)
-                    process(headerlevel)
-                    add('</section>', level)
+                    --Handle pre tags (no extra indentation inside)
+                    if string.match(line, "<pre[^/]*>") then
+                        noIndent = true
+                    end
+                    if string.match(line, "</pre") then
+                        noIndent = false
+                    end
                 end
-            else -- no header tag
-                add(line, level)
             end
-
-            -- TODO handle blank lines
-            -- TODO handle pre tags (no extra indentation inside)
 
             -- Grab the next line
             line = (table.remove(lineBuffer) or lines())
@@ -299,6 +315,7 @@ end
 -- Revisit association list STackValue instance.
 function DefinitionList(items)
     local buffer = {}
+    -- TODO indent
     for _,item in pairs(items) do
         for k, v in pairs(item) do
             table.insert(buffer,"<dt>" .. k .. "</dt>\n<dd>" .. table.concat(v,"</dd>\n<dd>") .. "</dd>")
