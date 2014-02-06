@@ -307,8 +307,8 @@ function CodeBlock(s, attr) -- TODO
         return '<img src="data:image/png;base64,' .. png .. '"/>'
         -- otherwise treat as code (one could pipe through a highlighter)
     else
-        return "<code" .. attributes(attr) .. "><pre>" .. escape(s) ..
-        "</pre></code>"
+        return "<pre><code" .. attributes(attr) .. ">" .. escape(s) ..
+        "</code></pre>"
     end
 end
 
