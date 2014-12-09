@@ -23,6 +23,28 @@ import http.server
 import markdown
 import pyinotify
 
-# TODO process source dir to dest dir. Read markdown source files, use custom % header to define page details, pass remaining parts of file to markdown module
+def process_markdown(source_file_path, output_file_path):
+    # TODO read % prefixed header for title, author, date, etc. Feed rest of file to markdown module class with extensions enabled.
+    # TODO insert created HTML snippet into complete HTML file, write html to output
+    pass
 
-# TODO if devserver option, launch http.server in background, inotify monitor source dir and regen files that change
+def build(source_file_paths, output_dir):
+    # TODO process all source files, if .md, process as markdown to html, otherwise copy to dest. Preserve directory structure in output
+    pass
+
+def rebuild_all(source_dir, output_dir):
+    # TODO list files, feed list to build
+    pass
+
+def rebuild_changes(source_dir, output_dir):
+    # TODO inotify monitor source dir to keep output_dir synchronised
+    # TODO remove any removed files, call build for any changed/added files
+    pass
+
+# TODO call with threading module?
+def dev_server(serve_dir):
+    # TODO call http.server, see http.server.test()
+    pass
+
+if __name__ == "__main__":
+    pass
