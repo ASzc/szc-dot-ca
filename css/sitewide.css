@@ -1,63 +1,9 @@
-/* font-face definitions */
-/* http://openfontlibrary.org/en/font/vds */
-/* VDS */
-@font-face {
-    font-family: "VDS";
-    src: url("/font/VDS_New.woff");
-    font-weight: normal;
-    font-style: normal;
-}
-@font-face {
-    font-family: "VDS";
-    src: url("/font/VDS_Bold_New.woff");
-    font-weight: bold;
-    font-style: normal;
-}
-@font-face {
-    font-family: "VDS";
-    src: url("/font/VDS_Bold_Italic_New.woff");
-    font-weight: bold;
-    font-style: italic;
-}
-/* VDS Thin */
-@font-face {
-    font-family: "VDS";
-    src: url("/font/VDS_Thin.woff");
-    font-weight: 300;
-    font-style: normal;
-}
-@font-face {
-    font-family: "VDS";
-    src: url("/font/VDS_Thin_Ita.woff");
-    font-weight: 300;
-    font-style: italic;
-}
-/* VDS Compensated Light */
-@font-face {
-    font-family: "VDSCompensatedLight";
-    src: url("/font/VDS_Compensated_Light.woff");
-    font-weight: normal;
-    font-style: normal;
-}
-@font-face {
-    font-family: "VDSCompensatedLight";
-    src: url("/font/VDS_Compensated_Light_Italic.woff");
-    font-weight: normal;
-    font-style: italic;
-}
-/* http://openfontlibrary.org/en/font/fifteen */
-/* Quinze Narrow */
-@font-face {
-    font-family: "QuinzeNarrow";
-    src: url("/font/QuinzeNarrow.woff");
-    font-weight: normal;
-    font-style: normal;
-}
+/* TODO, @import font-face definitions? */
 
 /* Font defaults */
 body {
     color: rgb(0, 0, 0);
-    font-family: VDS, Verdana, Geneva, sans-serif;
+    font-family: merriweather, sans-serif;
     font-size: medium;
     font-style: normal;
     font-weight: 300;
@@ -65,7 +11,7 @@ body {
 
 pre {
     font-weight: normal;
-    font-family: QuinzeNarrow, "Courier New", Courier, monospace;
+    font-family: monospace; /* TODO, find new mono webfont */
 }
 
 /* Body */

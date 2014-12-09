@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
 #
 # Copyright 2014 Alex Szczuczko
@@ -17,9 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-set -e
-set -u
+import argparse
+import http.server
 
-echo "http://localhost:8000/"
-cd live
-python3 -m http.server
+import markdown
+import pyinotify
+
+# TODO process source dir to dest dir. Read markdown source files, use custom % header to define page details, pass remaining parts of file to markdown module
+
+# TODO if devserver option, launch http.server in background, inotify monitor source dir and regen files that change
