@@ -49,19 +49,20 @@ def rebuild_all(source_dir, output_dir):
 
 def rebuild_changes(source_dir, output_dir, terminate_event):
     wm = pyinotify.WatchManager()
-    notifier = pyinotify.Notifier(wm)
     mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
     class SourceEventHandler(pyinotify.ProcessEvent):
         def process_IN_CREATE(self, event):
+            logger.debug("Created: {}".format(event.pathname))
             # TODO call build()
-            logger.info("Created: {}"(event.pathname))
 
         def process_IN_DELETE(self, event):
+            logger.debug("Deleted: {}".format(event.pathname))
             # TODO remove corresponding file in output
-            logger.info("Deleted: {}".format(event.pathname))
 
-    wm.add_watch(source_dir, mask=mask, proc_fun=SourceEventHandler, rec=True)
+    handler = SourceEventHandler()
+    notifier = pyinotify.Notifier(wm, handler)
+    wm.add_watch(source_dir, mask, rec=True)
     def terminator(notifier):
         return terminate_event.is_set()
     notifier.loop(callback=terminator)
@@ -126,6 +127,8 @@ def run_once(args):
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='Generate static files ("bake") from the given source directory to the given output directory.')
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="Make logging more verbose")
+    parser.add_argument("-q", "--quiet", action="count", default=0, help="Make logging less verbose")
     parser.add_argument("-s", "--source", default="source", help="Path to the directory containing the source files. Default: source")
     parser.add_argument("-o", "--output", default="output", help="Path to the directory where the output files will be placed. Default: output")
     subparsers = parser.add_subparsers()
@@ -142,13 +145,15 @@ def create_argparser():
 
     return parser
 
-def setup_logging():
-    logging.basicConfig(level=logging.INFO)
+def setup_logging(verbose, quiet):
+    level = logging.INFO - verbose * 10 + quiet * 10
+    logging.basicConfig(level=level, format="%(module)s:%(lineno)d %(funcName)s [%(levelname)s] %(message)s")
 
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
     if "func" in args:
+        setup_logging(args.verbose, args.quiet)
         args.func(args)
     else:
         parser.print_help()
