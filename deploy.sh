@@ -20,89 +20,10 @@
 set -e
 set -u
 
-die() {
-    echo "$@" >&2
-    exit 1
-}
-
-#
-# Prereq tests
-#
-
-# rsync and pandoc are required
-echo -e "rsync\npandoc" | while read -r prereq
-do
-    which "$prereq" 1>/dev/null 2>/dev/null || die "$prereq is required, but not present in your PATH"
-done
-
-# content_dir must exist
-content_dir="./content"
-[ -e "$content_dir" ] || die "$content_dir does not exist"
-[ -d "$content_dir" ] || die "$content_dir is not a directory"
-
-# css_dir must exist
-css_dir="./css"
-[ -e "$css_dir" ] || die "$css_dir does not exist"
-[ -d "$css_dir" ] || die "$css_dir is not a directory"
-
-# font_dir must exist
-font_dir="./font"
-[ -e "$font_dir" ] || die "$font_dir does not exist"
-[ -d "$font_dir" ] || die "$font_dir is not a directory"
-
-# writer_dir must exist
-writer_dir="./writer"
-[ -e "$writer_dir" ] || die "$writer_dir does not exist"
-[ -d "$writer_dir" ] || die "$writer_dir is not a directory"
-
-# deploy_dir may exist
-deploy_dir="./live"
-
-#
-# Build deploy dir
-#
-
-# Copy in the content dir's contents
-mkdir -p "$deploy_dir"
-cp -r -t "$deploy_dir" "$content_dir/."
-
-# CSS
-mkdir -p "$deploy_dir/css"
-find "$css_dir" -type f -name '*.css' -print0 | xargs -0 cp -t "$deploy_dir/css/"
-
-# Process pandoc-supported articles to html
-find "$deploy_dir" -type f -name '*.md' -print0 | while read -d $'\0' -r source_file
-do
-    # Perform templating outside of pandoc, since pandoc doesn't seem to like local template paths
-    # Also, can do some useful things this way, like standardising date formats, prettifying the body html, etc.
-
-    output_file="${source_file%%.md}.html"
-
-    pandoc -S -r markdown -t "$writer_dir/html5.lua" "$source_file" -o "$output_file"
-
-    # Rename source to .txt so the right mime type gets applied
-    mv "$source_file" "${source_file%%.md}.txt"
-done
-
-# Font .woff generation
-find "$font_dir" -type f -name '*.zip' -print0 | xargs -0 font/woff.sh
+deploy_dir="output"
 
 # gzip -9 files accepted by nginx's gzip_static config
 find "$deploy_dir" -type f -regextype 'posix-extended' -regex '.*\.(html|css|txt)' -print0 | xargs -0 gzip -kf9
 
-#
-# Perform post-build action
-#
-
 # rsync files to webroot
-if [ $# -gt 0 ]
-then
-    if [ "$1" = "-d" ]
-    then
-        ./devserver.sh
-    elif [ "$1" = "-s" ]
-    then
-        rsync -ruv -e "ssh -p220 -i $HOME/.ssh/skirnir-httpsync" "live/." httpsync@skirnir.szc.ca:html/
-    fi
-fi
-
+rsync -ruv -e "ssh -p220 -i $HOME/.ssh/skirnir-httpsync" "$deploy_dir/." httpsync@skirnir.szc.ca:html/
