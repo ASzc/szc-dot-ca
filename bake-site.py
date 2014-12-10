@@ -21,6 +21,7 @@ import argparse
 import http.server
 import logging
 import sys
+import os
 import threading
 
 import markdown
@@ -58,15 +59,40 @@ def rebuild_changes(source_dir, output_dir, terminate_event):
 
         def process_IN_DELETE(self, event):
             # TODO remove corresponding file in output
-        logger.info("Deleted: {}".format(event.pathname))
+            logger.info("Deleted: {}".format(event.pathname))
 
     wm.add_watch(source_dir, mask=mask, proc_fun=SourceEventHandler, rec=True)
-    notifier.loop(callback=terminate_event.is_set)
+    def terminator(notifier):
+        return terminate_event.is_set()
+    notifier.loop(callback=terminator)
+
+
+class RootedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def translate_path(self, path):
+        path = path.split("?",1)[0]
+        path = path.split("#",1)[0]
+        trailing_slash = path.rstrip().endswith("/")
+        try:
+            path = http.server.urllib.parse.unquote(path, errors="surrogatepass")
+        except UnicodeDecodeError:
+            path = http.server.urllib.parse.unquote(path)
+        path = http.server.posixpath.normpath(path)
+        words = path.split("/")
+        words = filter(None, words)
+        path = self.path_root
+        for word in words:
+            drive, word = os.path.splitdrive(word)
+            head, word = os.path.split(word)
+            if word in (os.curdir, os.pardir): continue
+            path = os.path.join(path, word)
+        if trailing_slash:
+            path += "/"
+        return path
 
 def serve(serve_dir, address, port):
-    handler_class = http.server.BaseHTTPRequestHandler
-    handler_class.protocol="HTTP/1.1"
-    httpd = http.server.HTTPServer((address, port), handler_class)
+    class HandlerClass(RootedHttpRequestHandler):
+        path_root = serve_dir
+    httpd = http.server.HTTPServer((address, port), HandlerClass)
     socket_address = httpd.socket.getsockname()
     logger.info("Serving {serve_dir} on {socket_address}".format(**locals()))
     try:
@@ -80,7 +106,7 @@ def serve(serve_dir, address, port):
 # Subcommand functions
 #
 
-def devserver(args):
+def run_devserver(args):
     rebuild_all(args.source, args.output)
     terminate_event = threading.Event()
     rebuilder = threading.Thread(target=rebuild_changes, args=(args.source,args.output, terminate_event))
@@ -91,7 +117,7 @@ def devserver(args):
         terminate_event.set()
         rebuilder.join(timeout=3)
 
-def once(args):
+def run_once(args):
     rebuild_all(args.source, args.output)
 
 #
@@ -106,15 +132,18 @@ def create_argparser():
 
     once_help = "Bake, then exit immediately."
     once = subparsers.add_parser("once", help=once_help, description=once_help)
-    once.set_defaults(func=once)
+    once.set_defaults(func=run_once)
 
     devserver_help = "Bake, then serve the output dir over HTTP while responding to source updates."
-    devserver = subparsers.add_parser("dev", help=devserver_help, descripton=devserver_help)
+    devserver = subparsers.add_parser("dev", help=devserver_help, description=devserver_help)
     devserver.add_argument("-b", "--bind", default="localhost", help="Specify an alternate bind address. Default: localhost")
     devserver.add_argument("-p", "--port", default=8000, type=int, help="Specify an alternate port. Default: 8000")
-    devserver.set_defaults(func=devserver)
+    devserver.set_defaults(func=run_devserver)
 
     return parser
+
+def setup_logging():
+    logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     parser = create_argparser()
