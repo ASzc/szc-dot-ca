@@ -47,7 +47,7 @@ def rebuild_all(source_dir, output_dir):
     pass
 
 
-def rebuild_changes(source_dir, output_dir, terminate_event):
+def rebuild_changes(source_dir, output_dir):
     wm = pyinotify.WatchManager()
     mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
@@ -63,9 +63,7 @@ def rebuild_changes(source_dir, output_dir, terminate_event):
     handler = SourceEventHandler()
     notifier = pyinotify.Notifier(wm, handler)
     wm.add_watch(source_dir, mask, rec=True)
-    def terminator(notifier):
-        return terminate_event.is_set()
-    notifier.loop(callback=terminator)
+    notifier.loop()
 
 
 class RootedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -109,14 +107,9 @@ def serve(serve_dir, address, port):
 
 def run_devserver(args):
     rebuild_all(args.source, args.output)
-    terminate_event = threading.Event()
-    rebuilder = threading.Thread(target=rebuild_changes, args=(args.source,args.output, terminate_event))
+    rebuilder = threading.Thread(target=rebuild_changes, args=(args.source,args.output), daemon=True)
     rebuilder.start()
-    try:
-        serve(args.output, args.bind, args.port)
-    finally:
-        terminate_event.set()
-        rebuilder.join(timeout=3)
+    serve(args.output, args.bind, args.port)
 
 def run_once(args):
     rebuild_all(args.source, args.output)
