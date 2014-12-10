@@ -20,6 +20,7 @@
 import argparse
 import http.server
 import logging
+import shutil
 import sys
 import os
 import threading
@@ -39,19 +40,31 @@ def process_markdown(source_file_path, output_file_path):
     pass
 
 def build(source_file_paths, output_dir, markdown_exts=["md"], other_exts=["txt"]):
-    # TODO process all source files, if .md, process as markdown to html, otherwise if known safe file ext copy to dest. Preserve directory structure in output
-    pass
+    for source_file_path in source_file_paths:
+        root, ext = os.path.splitext(source_file_path)
+        # TODO makedirs the dirname in output dir if going to write file?
+        if ext in markdown_exts:
+            logger.debug("Processing markdown file {source_file_path} to {output_dir}".format(**locals()))
+            # TODO
+        elif ext in other_exts:
+            logger.debug("Copying other file {source_file_path} to {output_dir}".format(**locals()))
+            # TODO
+        else:
+            logger.debug("Ignoring file {source_file_path}".format(**locals()))
 
 def rebuild_all(source_dir, output_dir):
+    logger.info("Building all files in {source_dir} to {output_dir}".format(**locals()))
     # TODO list files, feed list to build
     pass
 
-
 def rebuild_changes(source_dir, output_dir):
+    logger.debug("Setting up to monitor {source_dir}, affect {output_dir}".format(**locals()))
     wm = pyinotify.WatchManager()
     mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
     class SourceEventHandler(pyinotify.ProcessEvent):
+        # TODO have to handle create/delete of directories (as well as files) in the handler functions
+
         def process_IN_CREATE(self, event):
             logger.debug("Created: {}".format(event.pathname))
             # TODO call build()
@@ -63,8 +76,8 @@ def rebuild_changes(source_dir, output_dir):
     handler = SourceEventHandler()
     notifier = pyinotify.Notifier(wm, handler)
     wm.add_watch(source_dir, mask, rec=True)
+    logger.debug("Starting notifier loop".format(**locals()))
     notifier.loop()
-
 
 class RootedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path):
@@ -106,9 +119,15 @@ def serve(serve_dir, address, port):
 #
 
 def run_devserver(args):
+    assert not os.path.normpath(args.output) in [".", "source"]
+    logger.debug("Clearing {args.output}".format(**locals()))
+    shutil.rmtree(args.output, ignore_errors=True)
+    os.makedirs(args.output)
+
     rebuild_all(args.source, args.output)
     rebuilder = threading.Thread(target=rebuild_changes, args=(args.source,args.output), daemon=True)
     rebuilder.start()
+
     serve(args.output, args.bind, args.port)
 
 def run_once(args):
