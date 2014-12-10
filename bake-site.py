@@ -26,6 +26,7 @@ import os
 import threading
 
 import markdown
+import markdown.extensions as md_ext
 import pyinotify
 
 logger = logging.getLogger("bake-site")
@@ -34,12 +35,51 @@ logger = logging.getLogger("bake-site")
 # Library functions
 #
 
-def process_markdown(source_file_path, output_file_path):
-    # TODO read % prefixed header for title, author, date, etc. Feed rest of file to markdown module class with extensions enabled.
-    # TODO insert created HTML snippet into complete HTML file, write html to output
-    pass
+md_processor = markdown.Markdown(output_format="xhtml5",
+                                 extensions=[md_ext.ExtraExtension(),
+                                             md_ext.MetaExtension()
+                                             # TODO CodeHilite, need to set up Pygments prereqs
+                                             # TODO anything of interest here? https://github.com/waylan/Python-Markdown/wiki/Third-Party-Extensions
+                                             md_ext.HeaderIdExtension(),
+                                             md_ext.SaneListExtension(),
+                                             md_ext.SmartyExtension()],
+                                 )
 
-def build(source_file_paths, output_dir, markdown_exts=["md"], other_exts=["txt"]):
+def process_markdown(source_file_path, output_file_path):
+
+    with open(source_file_path, "r", encoding="utf-8") as f:
+        # TODO for following, use metadata ext? md_processor.Meta after calling convert
+        # TODO read % prefixed header for title, author, date, etc. Feed rest to markdown
+        pass
+        md_source = ""
+
+    md_html = md_processor.convert(text=md_source)
+    md_processor.reset()
+
+    header = ""
+    footer = ""
+
+    preamble = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link rel="stylesheet" href="/css/sitewide.css" type="text/css" />
+</head>
+<body>
+"""
+    postamble = """
+</body>
+</html>
+"""
+
+    body_html = "\n".join([header, md_html, footer])
+    complete_html = "\n".join([preamble, body, postamble])
+
+    with open(output_file_path, "w", encoding="utf-8") as f:
+        f.write(complete_html)
+
+def build(source_file_paths, output_dir, markdown_exts=["md"], other_exts=["txt", "woff"]):
     for source_file_path in source_file_paths:
         root, ext = os.path.splitext(source_file_path)
         # TODO makedirs the dirname in output dir if going to write file?
