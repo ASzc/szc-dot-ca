@@ -54,14 +54,21 @@ def process_markdown(source_file_path, output_file_path):
     md_meta = md_processor.Meta
     md_processor.reset()
 
-    header = ""
-    footer = ""
+    title = md_meta["title"][0] if "title" in md_meta else ""
+
+    header = """
+<section>
+    <h1>{title}</h1>
+""".format(**locals())
+    footer = """
+</section>
+"""
 
     preamble = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>{md_meta[title][0]}</title>
+    <title>{title}</title>
     <link rel="stylesheet" href="/css/sitewide.css" type="text/css" />
 </head>
 <body>
@@ -88,7 +95,7 @@ def resolve_output_path(source_path, source_dir, output_dir):
     output_path = os.path.join(output_dir, relative_path)
     return output_path
 
-def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_exts=["txt", "woff"]):
+def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_exts=["txt", "woff", "css"]):
     output_file_path = resolve_output_path(source_file_path, source_dir, output_dir)
     output_file_dir = os.path.dirname(output_file_path)
     root, ext = os.path.splitext(output_file_path)
@@ -108,22 +115,18 @@ def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_
 
 def remove_output(source_path, source_dir, output_dir):
     output_path = resolve_output_path(source_path, source_dir, output_dir)
-    if os.path.isfile(output_path):
+    if os.path.isfile(source_path):
         try:
             os.remove(output_path)
             logger.debug("Deleted file {output_path}".format(**locals()))
-        except FileNotFoundError:
-            logger.error("Can't delete file {path}: {e}".format(**locals()))
-    elif os.path.isdir(output_path):
+        except FileNotFoundError as e:
+            logger.debug("Can't delete file {output_path}: {e}".format(**locals()))
+    elif os.path.isdir(source_path):
         def log_errors(function, path, excinfo):
             e = excinfo[1]
-            logger.error("Can't delete directory {path}: {e}".format(**locals()))
+            logger.debug("Can't delete directory {path}: {e}".format(**locals()))
         shutil.rmtree(output_path, ignore_errors=True, onerror=log_errors)
         logger.debug("Recursively deleted directory {output_path}".format(**locals()))
-    elif os.path.exists(output_path):
-        logger.debug("Path does not exist: {output_path}".format(**locals()))
-    else:
-        logger.error("Unsupported path type: {output_path}".format(**locals()))
 
 def rebuild_all(source_dir, output_dir):
     logger.info("Building all files in {source_dir} to {output_dir}".format(**locals()))
