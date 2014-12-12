@@ -61,11 +61,11 @@ def process_markdown(source_file_path, output_file_path):
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>{md_meta[title][0]}</title>
     <link rel="stylesheet" href="/css/sitewide.css" type="text/css" />
 </head>
 <body>
-"""
+""".format(**locals())
     postamble = """
 </body>
 </html>
