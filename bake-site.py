@@ -42,7 +42,7 @@ logger = logging.getLogger("bake-site")
 md_processor = markdown.Markdown(output_format="xhtml5",
                                  extensions=[markdown.extensions.extra.ExtraExtension(),
                                              markdown.extensions.meta.MetaExtension(),
-                                             markdown.extensions.headerid.HeaderIdExtension(),
+                                             markdown.extensions.headerid.HeaderIdExtension(level=2),
                                              markdown.extensions.sane_lists.SaneListExtension(),
                                              markdown.extensions.smarty.SmartyExtension()])
 
@@ -50,7 +50,7 @@ def process_markdown(source_file_path, output_file_path):
     with open(source_file_path, "r", encoding="utf-8") as f:
         md_source = f.read()
 
-    md_html = md_processor.convert(text=md_source)
+    md_html = md_processor.convert(md_source)
     md_meta = md_processor.Meta
     md_processor.reset()
 
@@ -91,13 +91,16 @@ def resolve_output_path(source_path, source_dir, output_dir):
 def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_exts=["txt", "woff"]):
     output_file_path = resolve_output_path(source_file_path, source_dir, output_dir)
     output_file_dir = os.path.dirname(output_file_path)
-    root, ext = os.path.splitext(source_file_path)
+    root, ext = os.path.splitext(output_file_path)
+    ext = ext.strip(".")
+
     if ext in markdown_exts:
-        logger.info("Processing markdown file {source_file_path} to {output_dir}".format(**locals()))
+        output_html_path = root + ".html"
+        logger.debug("Processing markdown file {source_file_path} to {output_html_path}".format(**locals()))
         os.makedirs(output_file_dir, exist_ok=True)
-        process_markdown(source_file_path, output_file_path)
+        process_markdown(source_file_path, output_html_path)
     elif ext in other_exts:
-        logger.info("Copying other file {source_file_path} to {output_dir}".format(**locals()))
+        logger.debug("Copying other file {source_file_path} to {output_file_path}".format(**locals()))
         os.makedirs(output_file_dir, exist_ok=True)
         shutil.copyfile(source_file_path, output_file_path)
     else:
@@ -126,7 +129,7 @@ def rebuild_all(source_dir, output_dir):
     logger.info("Building all files in {source_dir} to {output_dir}".format(**locals()))
     for dirpath, dirnames, filenames in os.walk(source_dir):
         for filename in filenames:
-            build(filename, source_dir, output_dir)
+            build(os.path.abspath(os.path.join(dirpath, filename)), source_dir, output_dir)
 
 def rebuild_changes(source_dir, output_dir):
     logger.debug("Setting up to monitor {source_dir}, affect {output_dir}".format(**locals()))
@@ -135,13 +138,15 @@ def rebuild_changes(source_dir, output_dir):
 
     class SourceEventHandler(pyinotify.ProcessEvent):
         def process_IN_CREATE(self, event):
+            path = event.pathname
             logger.debug("Created: {}".format(path))
-            if os.path.isfile(event.pathname):
-                build(event.pathname, source_dir, output_dir)
+            if os.path.isfile(path):
+                build(path, source_dir, output_dir)
 
         def process_IN_DELETE(self, event):
+            path = event.pathname
             logger.debug("Deleted: {}".format(path))
-            remove_output(event.pathname, source_dir, output_dir)
+            remove_output(path, source_dir, output_dir)
 
     handler = SourceEventHandler()
     notifier = pyinotify.Notifier(wm, handler)
