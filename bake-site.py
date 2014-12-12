@@ -26,34 +26,32 @@ import os
 import threading
 
 import markdown
-import markdown.extensions as md_ext
+import markdown.extensions.extra
+import markdown.extensions.meta
+import markdown.extensions.headerid
+import markdown.extensions.sane_lists
+import markdown.extensions.smarty
 import pyinotify
 
 logger = logging.getLogger("bake-site")
 
 #
-# Library functions
+# Markdown
 #
 
 md_processor = markdown.Markdown(output_format="xhtml5",
-                                 extensions=[md_ext.ExtraExtension(),
-                                             md_ext.MetaExtension()
-                                             # TODO CodeHilite, need to set up Pygments prereqs
-                                             # TODO anything of interest here? https://github.com/waylan/Python-Markdown/wiki/Third-Party-Extensions
-                                             md_ext.HeaderIdExtension(),
-                                             md_ext.SaneListExtension(),
-                                             md_ext.SmartyExtension()],
-                                 )
+                                 extensions=[markdown.extensions.extra.ExtraExtension(),
+                                             markdown.extensions.meta.MetaExtension(),
+                                             markdown.extensions.headerid.HeaderIdExtension(),
+                                             markdown.extensions.sane_lists.SaneListExtension(),
+                                             markdown.extensions.smarty.SmartyExtension()])
 
 def process_markdown(source_file_path, output_file_path):
-
     with open(source_file_path, "r", encoding="utf-8") as f:
-        # TODO for following, use metadata ext? md_processor.Meta after calling convert
-        # TODO read % prefixed header for title, author, date, etc. Feed rest to markdown
-        pass
-        md_source = ""
+        md_source = f.read()
 
     md_html = md_processor.convert(text=md_source)
+    md_meta = md_processor.Meta
     md_processor.reset()
 
     header = ""
@@ -73,29 +71,62 @@ def process_markdown(source_file_path, output_file_path):
 </html>
 """
 
-    body_html = "\n".join([header, md_html, footer])
-    complete_html = "\n".join([preamble, body, postamble])
-
     with open(output_file_path, "w", encoding="utf-8") as f:
-        f.write(complete_html)
+        f.write(preamble)
+        f.write(header)
+        f.write(md_html)
+        f.write(footer)
+        f.write(postamble)
 
-def build(source_file_paths, output_dir, markdown_exts=["md"], other_exts=["txt", "woff"]):
-    for source_file_path in source_file_paths:
-        root, ext = os.path.splitext(source_file_path)
-        # TODO makedirs the dirname in output dir if going to write file?
-        if ext in markdown_exts:
-            logger.debug("Processing markdown file {source_file_path} to {output_dir}".format(**locals()))
-            # TODO
-        elif ext in other_exts:
-            logger.debug("Copying other file {source_file_path} to {output_dir}".format(**locals()))
-            # TODO
-        else:
-            logger.debug("Ignoring file {source_file_path}".format(**locals()))
+#
+# Output generation
+#
+
+def resolve_output_path(source_path, source_dir, output_dir):
+    source_path = source_path
+    relative_path = os.path.relpath(source_path, source_dir)
+    output_path = os.path.join(output_dir, relative_path)
+    return output_path
+
+def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_exts=["txt", "woff"]):
+    output_file_path = resolve_output_path(source_file_path, source_dir, output_dir)
+    output_file_dir = os.path.dirname(output_file_path)
+    root, ext = os.path.splitext(source_file_path)
+    if ext in markdown_exts:
+        logger.info("Processing markdown file {source_file_path} to {output_dir}".format(**locals()))
+        os.makedirs(output_file_dir, exist_ok=True)
+        process_markdown(source_file_path, output_file_path)
+    elif ext in other_exts:
+        logger.info("Copying other file {source_file_path} to {output_dir}".format(**locals()))
+        os.makedirs(output_file_dir, exist_ok=True)
+        shutil.copyfile(source_file_path, output_file_path)
+    else:
+        logger.debug("Ignoring file {source_file_path}".format(**locals()))
+
+def remove_output(source_path, source_dir, output_dir):
+    output_path = resolve_output_path(source_path, source_dir, output_dir)
+    if os.path.isfile(output_path):
+        try:
+            os.remove(output_path)
+            logger.debug("Deleted file {output_path}".format(**locals()))
+        except FileNotFoundError:
+            logger.error("Can't delete file {path}: {e}".format(**locals()))
+    elif os.path.isdir(output_path):
+        def log_errors(function, path, excinfo):
+            e = excinfo[1]
+            logger.error("Can't delete directory {path}: {e}".format(**locals()))
+        shutil.rmtree(output_path, ignore_errors=True, onerror=log_errors)
+        logger.debug("Recursively deleted directory {output_path}".format(**locals()))
+    elif os.path.exists(output_path):
+        logger.debug("Path does not exist: {output_path}".format(**locals()))
+    else:
+        logger.error("Unsupported path type: {output_path}".format(**locals()))
 
 def rebuild_all(source_dir, output_dir):
     logger.info("Building all files in {source_dir} to {output_dir}".format(**locals()))
-    # TODO list files, feed list to build
-    pass
+    for dirpath, dirnames, filenames in os.walk(source_dir):
+        for filename in filenames:
+            build(filename, source_dir, output_dir)
 
 def rebuild_changes(source_dir, output_dir):
     logger.debug("Setting up to monitor {source_dir}, affect {output_dir}".format(**locals()))
@@ -103,21 +134,24 @@ def rebuild_changes(source_dir, output_dir):
     mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
     class SourceEventHandler(pyinotify.ProcessEvent):
-        # TODO have to handle create/delete of directories (as well as files) in the handler functions
-
         def process_IN_CREATE(self, event):
-            logger.debug("Created: {}".format(event.pathname))
-            # TODO call build()
+            logger.debug("Created: {}".format(path))
+            if os.path.isfile(event.pathname):
+                build(event.pathname, source_dir, output_dir)
 
         def process_IN_DELETE(self, event):
-            logger.debug("Deleted: {}".format(event.pathname))
-            # TODO remove corresponding file in output
+            logger.debug("Deleted: {}".format(path))
+            remove_output(event.pathname, source_dir, output_dir)
 
     handler = SourceEventHandler()
     notifier = pyinotify.Notifier(wm, handler)
-    wm.add_watch(source_dir, mask, rec=True)
+    wm.add_watch(source_dir, mask, rec=True, auto_add=True)
     logger.debug("Starting notifier loop".format(**locals()))
     notifier.loop()
+
+#
+# HTTP
+#
 
 class RootedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path):
@@ -131,7 +165,7 @@ class RootedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         path = http.server.posixpath.normpath(path)
         words = path.split("/")
         words = filter(None, words)
-        path = self.path_root
+        path = self.path_root # This line is the only change
         for word in words:
             drive, word = os.path.splitdrive(word)
             head, word = os.path.split(word)
