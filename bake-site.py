@@ -188,7 +188,7 @@ def serve(serve_dir, address, port):
         path_root = serve_dir
     httpd = http.server.HTTPServer((address, port), HandlerClass)
     socket_address = httpd.socket.getsockname()
-    logger.info("Serving {serve_dir} on {socket_address}".format(**locals()))
+    logger.info("Serving {serve_dir} on http://{socket_address[0]}:{socket_address[1]}".format(**locals()))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
