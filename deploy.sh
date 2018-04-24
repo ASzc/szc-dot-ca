@@ -17,8 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-set -e
-set -u
+set -xeuo pipefail
 
 deploy_dir="output"
 
