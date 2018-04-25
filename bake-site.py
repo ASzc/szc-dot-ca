@@ -106,6 +106,7 @@ def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_
         logger.debug("Processing markdown file {source_file_path} to {output_html_path}".format(**locals()))
         os.makedirs(output_file_dir, exist_ok=True)
         process_markdown(source_file_path, output_html_path)
+        shutil.copyfile(source_file_path, output_file_path)
     elif ext in other_exts:
         logger.debug("Copying other file {source_file_path} to {output_file_path}".format(**locals()))
         os.makedirs(output_file_dir, exist_ok=True)
