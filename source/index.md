@@ -22,7 +22,7 @@ title: Alex Szczuczko
 # Communications
 
 - Email: [alex@szc.ca](mailto:alex@szc.ca)
-- Matrix: @aszc:matrix.org
+- Matrix: [@aszc:matrix.org](https://matrix.to/#/@aszc:matrix.org)
 
 ## GPG Public Key
 
