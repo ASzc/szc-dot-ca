@@ -114,6 +114,10 @@ def build(source_file_path, source_dir, output_dir, markdown_exts=["md"], other_
     else:
         logger.debug("Ignoring file {source_file_path}".format(**locals()))
 
+def log_errors(function, path, excinfo):
+    e = excinfo[1]
+    logger.debug("Can't delete directory {path}: {e}".format(**locals()))
+
 def remove_output(source_path, source_dir, output_dir):
     output_path = resolve_output_path(source_path, source_dir, output_dir)
     if os.path.isfile(source_path):
@@ -123,13 +127,11 @@ def remove_output(source_path, source_dir, output_dir):
         except FileNotFoundError as e:
             logger.debug("Can't delete file {output_path}: {e}".format(**locals()))
     elif os.path.isdir(source_path):
-        def log_errors(function, path, excinfo):
-            e = excinfo[1]
-            logger.debug("Can't delete directory {path}: {e}".format(**locals()))
         shutil.rmtree(output_path, ignore_errors=True, onerror=log_errors)
         logger.debug("Recursively deleted directory {output_path}".format(**locals()))
 
 def rebuild_all(source_dir, output_dir):
+    shutil.rmtree(output_dir, ignore_errors=True, onerror=log_errors)
     logger.info("Building all files in {source_dir} to {output_dir}".format(**locals()))
     for dirpath, dirnames, filenames in os.walk(source_dir):
         for filename in filenames:
