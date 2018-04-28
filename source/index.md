@@ -2,7 +2,7 @@ title: Alex Szczuczko
 
 # I ...
 - live in Calgary, Canada.
-- work as a Software Engineer for [Red Hat](https://www.redhat.com/).
+- work as a Senior Software Engineer for [Red Hat](https://www.redhat.com/).
 - write software, generally in
     - Python 3,
     - Java,
