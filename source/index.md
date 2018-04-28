@@ -6,6 +6,7 @@ title: Alex Szczuczko
 - write software, generally in
     - Python 3,
     - Java,
+    - Bash,
     - or C.
 - have a particular interest in
     - automation,
